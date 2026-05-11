@@ -2,7 +2,7 @@
 
 EscrowIQ is a freelance marketplace prototype built around an escrow-first workflow: clients post jobs, freelancers send proposals, one proposal is accepted, funds are locked in escrow, work is submitted for review, and payment is either released, revised, disputed, or refunded.
 
-The project combines a Flask backend, PostgreSQL persistence, server-rendered Jinja templates, session auth, SMTP email notifications, and lightweight AI-style features for fraud analysis, ranking, and proposal drafting.
+The project combines a Flask backend, PostgreSQL persistence, server-rendered Jinja templates, session auth, SMTP email notifications, a Groq-powered chatbot assistant, and lightweight AI-style features for fraud analysis, ranking, and proposal drafting.
 
 ## Highlights
 
@@ -14,6 +14,7 @@ The project combines a Flask backend, PostgreSQL persistence, server-rendered Ji
 - Work submission with delivery note, link, zip upload, or folder upload
 - Change requests, complaints, and admin complaint resolution
 - In-app notifications plus branded email notifications
+- Groq-powered chatbot assistant available across the site
 - AI-style fraud analysis, matching, and proposal generation
 - Cookie consent banner for a more realistic frontend experience
 
@@ -23,6 +24,7 @@ The project combines a Flask backend, PostgreSQL persistence, server-rendered Ji
 - Database: PostgreSQL
 - Frontend: Jinja2 templates, vanilla JavaScript, custom CSS
 - ML / scoring: scikit-learn TF-IDF similarity plus rule-based logic
+- Chatbot: Groq API with `llama-3.1-8b-instant` by default
 - Email: SMTP
 - Password hashing: Werkzeug security helpers
 - Testing: Python `unittest`
@@ -169,6 +171,16 @@ Project/
 
 ### AI / Ranking Features
 
+#### Chatbot Assistant
+
+- Floating site-wide assistant UI built into the shared layout
+- Backend route at `/api/chatbot`
+- Uses the Groq Python SDK with a project-aware EscrowIQ system prompt
+- Understands EscrowIQ flows such as jobs, proposals, escrow, submissions, complaints, and profile management
+- Reads configuration from `Backend/.env` using:
+  - `GROQ_API_KEY`
+  - `GROQ_MODEL`
+
 #### Fraud Detection
 
 - Rule-based and TF-IDF-style hybrid scoring
@@ -196,6 +208,7 @@ Project/
 - Python 3.10+
 - PostgreSQL
 - SMTP credentials for email delivery
+- Groq API key for the chatbot assistant
 
 ### Install Dependencies
 
@@ -219,7 +232,7 @@ Typical keys used by the app:
 
 ```env
 SECRET_KEY=change-me
-DATABASE_URL=postgresql://username:password@localhost:5432/escrowiq
+DATABASE_URL=postgresql+psycopg2://username:password@localhost:5432/escrowiq
 
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
@@ -235,7 +248,14 @@ FOUNDER_ALERT_EMAILS=founder@example.com
 SESSION_COOKIE_SECURE=false
 AI_MODE=hybrid
 AI_FALLBACK_ENABLED=true
+GROQ_API_KEY=your-groq-api-key
+GROQ_MODEL=llama-3.1-8b-instant
 ```
+
+Notes:
+
+- `GROQ_API_KEY` is required for the chatbot assistant to return live responses.
+- `GROQ_MODEL` is optional; if omitted, the app defaults to `llama-3.1-8b-instant`.
 
 ## Running the App
 
@@ -251,12 +271,15 @@ What `Backend/run.py` does:
 - initializes the schema if needed
 - seeds demo users and jobs
 - starts the Flask app
+- makes the Groq-backed chatbot available if `GROQ_API_KEY` is configured
 
 Default local URL:
 
 ```text
 http://localhost:5000
 ```
+
+Once the app is running, the chatbot can be opened from the floating `AI Help` button in the bottom-right corner of the UI.
 
 ## Demo / Seed Data
 
@@ -297,7 +320,7 @@ Notes:
 ### Backend
 
 - [Backend/app.py](</d:/FAST 6th Semester/Web Programming/Semester Project/Project Files/Web-Programming-main/Web-Programming-main/Project/Backend/app.py>)
-  Main application logic, routes, schema management, validation, escrow, emails, notifications.
+  Main application logic, routes, schema management, validation, escrow, emails, notifications, and chatbot API.
 
 - [Backend/run.py](</d:/FAST 6th Semester/Web Programming/Semester Project/Project Files/Web-Programming-main/Web-Programming-main/Project/Backend/run.py>)
   Local startup script and demo data seeding.
@@ -314,7 +337,7 @@ Notes:
 ### Frontend
 
 - [Frontend/templates/base.html](</d:/FAST 6th Semester/Web Programming/Semester Project/Project Files/Web-Programming-main/Web-Programming-main/Project/Frontend/templates/base.html>)
-  Shared layout, navbar, notifications, toast system, cookie consent banner.
+  Shared layout, navbar, notifications, toast system, cookie consent banner, and floating chatbot assistant UI.
 
 - [Frontend/templates/dashboard_client.html](</d:/FAST 6th Semester/Web Programming/Semester Project/Project Files/Web-Programming-main/Web-Programming-main/Project/Frontend/templates/dashboard_client.html>)
   Client dashboard and job creation UI.
@@ -334,6 +357,7 @@ Before deployment:
 - set all required environment variables
 - ensure PostgreSQL is reachable from the host
 - confirm SMTP credentials are valid in production
+- configure a valid `GROQ_API_KEY` if the chatbot should be enabled
 - set `SESSION_COOKIE_SECURE=true` behind HTTPS
 - use a strong `SECRET_KEY`
 
@@ -348,6 +372,7 @@ Before deployment:
 - No full migrations system such as Alembic
 - Cookie consent is UI-only, not a full compliance framework
 - SMTP and admin auth are environment-driven and fairly simple
+- The chatbot depends on an external Groq API key and network access
 - The app uses server-rendered templates rather than a component frontend
 - Some docs in the repository are legacy notes and overlap with this README
 
